@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Zmena krajinnej pokrývky v čase</title>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css" />
+		<link rel="stylesheet" type="text/css" href="css/own_style.css">
+		<link rel="stylesheet" href="css/label.css" />
+		<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+		<script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
+		<script src="js/leaflet-hash.js"></script>
+		<script src="js/label.js"></script>
+		<script src="js/Autolinker.min.js"></script>
+		<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	</head>
+	<body>
+		<div id="map"></div>
+		<input id="slide" type="range" min="0" max="1" step="0.1" value="1" onchange="updateOpacity(this.value)">
+		<script>
+		var map = L.map('map', {
+			zoomControl:true, maxZoom:19
+		}).fitBounds([[48.0497740172,16.9450884819],[48.2484857179,17.2509793282]]);
+		var hash = new L.Hash(map);
+		var additional_attrib = 'created w. <a href="https://github.com/geolicious/qgis2leaf" target ="_blank">qgis2leaf</a> by <a href="http://www.geolicious.de" target ="_blank">Geolicious</a> & contributors<br>';
+		var feature_group = new L.featureGroup([]);
+		var raster_group = new L.LayerGroup([]);
+		
+		var layerOrder=new Array();
+		var overlay_vojmapi = L.tileLayer.wms('http://195.210.29.101:8080/geoserver/optivia/wms?', {
+			layers: 'voj_map_i',
+			format: 'image/png',
+			transparent: true,
+			continuousWorld : true,
+		}).addTo(map);
+		var overlay_vojmapii = L.tileLayer.wms('http://195.210.29.101:8080/geoserver/optivia/wms?', {
+			layers: 'voj_map_ii',
+			format: 'image/png',
+			transparent: true,
+			continuousWorld : true,
+		}).addTo(map);
+		var overlay_vojmapiii = L.tileLayer.wms('http://195.210.29.101:8080/geoserver/optivia/wms?', {
+			layers: 'voj_map_iii',
+			format: 'image/png',
+			transparent: true,
+			continuousWorld : true,
+		}).addTo(map);
+		var overlay_cstopo1 = L.tileLayer.wms('http://195.210.29.101:8080/geoserver/optivia/wms?', {
+			layers: 'cs_topo1',
+			format: 'image/png',
+			transparent: true,
+			continuousWorld : true,
+		}).addTo(map);
+		var overlay_tm25 = L.tileLayer.wms('http://195.210.29.101:8080/geoserver/optivia/wms?', {
+			layers: 'tm_25',
+			format: 'image/png',
+			transparent: true,
+			continuousWorld : true,
+		}).addTo(map);
+var wms_cstopo1 = L.tileLayer.wms('http://nipi.sazp.sk/arcgis/services/ng/rastre/MapServer/WMSServer?', {
+			layers: 'TM25_1952_1957',
+			format: 'image/png',
+			transparent: true,
+			continuousWorld : true,
+		}).addTo(map);
+var wms_tm25 = L.tileLayer.wms('http://nipi.sazp.sk/arcgis/services/ng/rastre/MapServer/WMSServer?', {
+			layers: 'RETM25',
+			format: 'image/png',
+			transparent: true,
+			continuousWorld : true,
+		}).addTo(map);
+var wms_vojmapiii = L.tileLayer.wms('http://nipi.sazp.sk/arcgis/services/ng/rastre/MapServer/WMSServer?', {
+			layers: 'VOJENSKE_MAPOVANIE_III_1875_1884',
+			format: 'image/png',
+			transparent: true,
+			continuousWorld : true,
+		}).addTo(map);
+var wms_vojmapii = L.tileLayer.wms('http://nipi.sazp.sk/arcgis/services/ng/rastre/MapServer/WMSServer?', {
+			layers: 'VOJENSKE_MAPOVANIE_II_1810_1869',
+			format: 'image/png',
+			transparent: true,
+			continuousWorld : true,
+		}).addTo(map);
+var wms_vojmapi = L.tileLayer.wms('http://nipi.sazp.sk/arcgis/services/ng/rastre/MapServer/WMSServer?', {
+			layers: 'VOJENSKE_MAPOVANIE_I_1764_1787',
+			format: 'image/png',
+			transparent: true,
+			continuousWorld : true,
+		}).addTo(map);
+var basemap_0 = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+			attribution: additional_attrib + '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors,<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'
+		});	
+		basemap_0.addTo(map);	
+
+		feature_group.addTo(map);
+		var title = new L.Control();
+		title.onAdd = function (map) {
+			this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+			this.update();
+			return this._div;
+		};
+		title.update = function () {
+			this._div.innerHTML = '<h2>This is the title</h2>This is the subtitle'
+		};
+		
+		var legend = L.control({position: 'bottomright'});
+		legend.onAdd = function (map) {
+			var div = L.DomUtil.create('div', 'info legend');
+			div.innerHTML = "<h3>Legenda</h3> <img src=\"legenda.jpeg\" alt=\"Legenda\" height=\"196\" width=\"192\"> ";
+    		return div;
+		};
+		legend.addTo(map);
+	var baseMaps = {"Raster 1785":wms_vojmapi,"Raster 1845":wms_vojmapii,"Raster 1882":wms_vojmapiii,"Raster 1955":wms_cstopo1,"Raster 1998":wms_tm25,'OSM Standard': basemap_0		
+        
+	};
+		L.control.layers(baseMaps,{"1998": overlay_tm25,"1955": overlay_cstopo1,"1882": overlay_vojmapiii,"1845": overlay_vojmapii,"1785": overlay_vojmapi},{collapsed:false}).addTo(map);
+		function updateOpacity(value) {
+		
+							overlay_tm25.setOpacity(value);
+							overlay_cstopo1.setOpacity(value);
+							overlay_vojmapiii.setOpacity(value);
+							overlay_vojmapii.setOpacity(value);
+							overlay_vojmapi.setOpacity(value)}
+		L.control.scale({options: {position: 'bottomleft',maxWidth: 100,metric: true,imperial: false,updateWhenIdle: false}}).addTo(map);
+	</script>
+</body>
+</html>
